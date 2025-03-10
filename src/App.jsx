@@ -113,7 +113,7 @@ function App() {
         </section>
       </div>
       <footer className="footer text-center mt-4">
-        <p>Made with ❤️ by Sandipta</p>
+        <p>Developed by Sandipta</p>
       </footer>
 
       {selectedMovie && (
