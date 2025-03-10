@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react'
 import Search from './components/Search'
 import heroLogo from '/hero.png'
-import Spinner from './components/Spinner';
-import MovieCard from './components/MovieCard';
-import { useDebounce } from 'react-use';
-import { updateSearchCount } from './appwrite';
+import Spinner from './components/Spinner'
+import MovieCard from './components/MovieCard'
+import RatingFilter from './components/RatingFilter'
+import { useDebounce } from 'react-use'
+import { updateSearchCount } from './appwrite'
 
-const API_ENDPOINT = 'https://api.themoviedb.org/3';
-const API_KEY = import.meta.env.VITE_TMDB_API_KEY;
+const API_ENDPOINT = 'https://api.themoviedb.org/3'
+const API_KEY = import.meta.env.VITE_TMDB_API_KEY
 const API_OPTIONS = {
   method: 'GET',
   headers: {
@@ -16,52 +17,52 @@ const API_OPTIONS = {
   }
 }
 
-
 function App() {
-
-  const [searchTerm, setSearchTerm] = useState('');
-  const [errorMessage, setErrorMesssage] = useState('');
-  const [movieList, setMovieList] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [deboucedSearchTerm, setDebouncedSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState('')
+  const [errorMessage, setErrorMesssage] = useState('')
+  const [movieList, setMovieList] = useState([])
+  const [isLoading, setIsLoading] = useState(false)
+  const [deboucedSearchTerm, setDebouncedSearchTerm] = useState('')
+  const [selectedMovie, setSelectedMovie] = useState(null)
+  const [ratingFilter, setRatingFilter] = useState(0)
 
   useDebounce(() => {  
-    setDebouncedSearchTerm(searchTerm);  
-  } , 500, [searchTerm]);
-
+    setDebouncedSearchTerm(searchTerm)  
+  }, 500, [searchTerm])
 
   const FetchMovies = async (query = '') => {
-    setIsLoading(true);
-    setErrorMesssage('');
+    setIsLoading(true)
+    setErrorMesssage('')
     try {
-      const endpoint = query ?
-        `${API_ENDPOINT}/search/movie?query=${encodeURIComponent(query)}`
-        : `${API_ENDPOINT}/discover/movie?sort_by=popularity.desc`;
-      const response = await fetch(endpoint, API_OPTIONS);
+      const endpoint = query
+        ? `${API_ENDPOINT}/search/movie?query=${encodeURIComponent(query)}`
+        : `${API_ENDPOINT}/discover/movie?sort_by=popularity.desc`
+      const response = await fetch(endpoint, API_OPTIONS)
       if (!response.ok) {
-        throw new Error('Failed to fetch movies');
+        throw new Error('Failed to fetch movies')
       }
-      const data = await response.json();
-      setMovieList(data.results || []);
-      if(query && data.results.length > 0) {
-        // updateSearchCount(query, data.results[0]);
-        await updateSearchCount(query, data.results[0]);
+      const data = await response.json()
+      setMovieList(data.results || [])
+      if (query && data.results.length > 0) {
+        await updateSearchCount(query, data.results[0])
       }
       if (data.Response === 'False') {
-        setErrorMesssage(data.Error || 'Failed to fetch movies');
-        setMovieList([]);
-        return;
+        setErrorMesssage(data.Error || 'Failed to fetch movies')
+        setMovieList([])
+        return
       }
     } catch (error) {
-      console.error(`Error fetching movies: ${error}`);
+      console.error(`Error fetching movies: ${error}`)
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
   }
-  useEffect(() => {
-    FetchMovies(deboucedSearchTerm);
-  }, [deboucedSearchTerm]);
 
+  useEffect(() => {
+    FetchMovies(deboucedSearchTerm)
+  }, [deboucedSearchTerm])
+
+  const filteredMovies = movieList.filter(movie => movie.vote_average >= ratingFilter)
 
   return (
     <main>
@@ -69,24 +70,46 @@ function App() {
       <div className='wrapper'>
         <header>
           <img src={heroLogo} alt="Hero Banner" />
-          <h1>Find <span className='text-gradient'>Movies</span>You'll enjoy Without the Hassle</h1>
+          <h1>
+            Find <span className='text-gradient'>Movies</span> You'll enjoy Without the Hassle
+          </h1>
           <Search searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
         </header>
         <section className='all-movies'>
-          <h2 className="mt-[40px]">All Movies</h2>
+          <div className="flex items-center justify-between mt-[40px]">
+            <h2 className="text-white text-2xl font-bold">All Movies</h2>
+            <RatingFilter ratingFilter={ratingFilter} setRatingFilter={setRatingFilter} />
+          </div>
           {isLoading ? (
             <div className="text-white"><Spinner /></div>
           ) : errorMessage ? (
             <p className="text-red-500">{errorMessage}</p>
           ) : (
             <ul>
-              {movieList.map((movie) => (
-                <MovieCard key={movie.id} movie={movie} />
+              {filteredMovies.map((movie) => (
+                <MovieCard key={movie.id} movie={movie} onOpenPopup={() => setSelectedMovie(movie)} />
               ))}
             </ul>
           )}
         </section>
       </div>
+      <footer className="footer text-center mt-4">
+        <p>Made with ❤️ by Sandipta</p>
+      </footer>
+      {selectedMovie && (
+        <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50">
+          <div className="relative bg-gray-800 text-white max-w-lg w-11/12 p-6 rounded-md shadow-2xl">
+            <button
+              onClick={() => setSelectedMovie(null)}
+              className="absolute top-2 right-2 text-2xl font-bold hover:text-gray-300"
+            >
+              ✕
+            </button>
+            <h2 className="text-2xl font-bold mb-2">{selectedMovie.title}</h2>
+            <p className="text-base leading-relaxed">{selectedMovie.overview}</p>
+          </div>
+        </div>
+      )}
     </main>
   )
 }
