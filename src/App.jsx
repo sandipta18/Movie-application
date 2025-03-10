@@ -26,8 +26,8 @@ function App() {
   const [selectedMovie, setSelectedMovie] = useState(null)
   const [ratingFilter, setRatingFilter] = useState(0)
 
-  useDebounce(() => {  
-    setDebouncedSearchTerm(searchTerm)  
+  useDebounce(() => {
+    setDebouncedSearchTerm(searchTerm)
   }, 500, [searchTerm])
 
   const FetchMovies = async (query = '') => {
@@ -75,7 +75,7 @@ function App() {
           </h1>
           <Search searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
         </header>
-        <section className='all-movies'>
+        <section className="all-movies">
           <div className="flex items-center justify-between mt-[40px]">
             <h2 className="text-white text-2xl font-bold">All Movies</h2>
             <RatingFilter ratingFilter={ratingFilter} setRatingFilter={setRatingFilter} />
@@ -84,6 +84,8 @@ function App() {
             <div className="text-white"><Spinner /></div>
           ) : errorMessage ? (
             <p className="text-red-500">{errorMessage}</p>
+          ) : filteredMovies.length === 0 ? (
+            <p className="text-white mt-4">No movies found matching your criteria.</p>
           ) : (
             <ul>
               {filteredMovies.map((movie) => (
@@ -92,6 +94,7 @@ function App() {
             </ul>
           )}
         </section>
+
       </div>
       <footer className="footer text-center mt-4">
         <p>Made with ❤️ by Sandipta</p>
