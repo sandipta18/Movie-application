@@ -31,10 +31,11 @@ const MovieCard = ({ movie, onOpenPopup }) => {
 
       <button
         onClick={onOpenPopup}
-        className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-gradient-to-br from-yellow-400 to-yellow-500 text-black font-bold rounded-full w-12 h-12 flex items-center justify-center shadow-lg transition-transform hover:scale-110 hover:shadow-2xl"
+        className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-gradient-to-br from-yellow-400 to-yellow-500 text-black font-bold rounded-full w-12 h-12 flex items-center justify-center shadow-lg transition-transform hover:scale-110 hover:shadow-2xl cursor-pointer"
       >
         ▶
       </button>
+
     </div>
   );
 };
