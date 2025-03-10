@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { FaComments } from 'react-icons/fa';
 
 const ChatBot = ({ movies, onClose }) => {
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState([
-    { from: 'bot', text: 'Hi! I can help recommend movies. Tell me what genre you like!' },
+    { from: 'bot', text: 'Hi! I can help recommend movies. Tell me what genre you like or search by title.' },
   ]);
+  const messagesEndRef = useRef(null);
 
 
   const genreMap = {
@@ -23,46 +24,70 @@ const ChatBot = ({ movies, onClose }) => {
     music: 10402,
     mystery: 9648,
     romance: 10749,
-    'science fiction': 878,
-    'tv movie': 10770,
+    "science fiction": 878,
+    "tv movie": 10770,
     thriller: 53,
     war: 10752,
     western: 37,
   };
 
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
   const handleSend = () => {
     if (!input.trim()) return;
-    const userMessage = { from: 'user', text: input };
-    const updatedMessages = [...messages, userMessage];
-
-
-    const genreId = genreMap[input.toLowerCase()];
-    let recommendations = [];
-
-    if (genreId) {
-      recommendations = movies.filter(movie =>
-        movie.genre_ids.includes(genreId)
-      );
-    }
-
-
-    if (recommendations.length === 0) {
-      recommendations = movies.filter(movie =>
-        movie.title.toLowerCase().includes(input.toLowerCase())
-      );
-    }
-
-    let botResponse = '';
-    if (recommendations.length > 0) {
-      const titles = recommendations.slice(0, 3).map(movie => movie.title);
-      botResponse = 'I recommend: ' + titles.join(', ');
-    } else {
-      botResponse = "Sorry, I couldn't find any movies matching that.";
-    }
-
-    updatedMessages.push({ from: 'bot', text: botResponse });
-    setMessages(updatedMessages);
+    
+    const userText = input.trim();
+    setMessages(prev => [...prev, { from: 'user', text: userText }]);
     setInput('');
+    
+    setTimeout(() => {
+      const lowerInput = userText.toLowerCase();
+      const genreId = genreMap[lowerInput];
+
+      if (genreId) {
+        const recommendations = movies.filter(movie =>
+          movie.genre_ids.includes(genreId)
+        );
+        if (recommendations.length > 0) {
+          const titles = recommendations.slice(0, 3).map(movie => movie.title);
+          const botResponse = (Math.random() > 0.5 
+            ? 'How about: ' 
+            : 'I recommend: ') + titles.join(', ');
+          setMessages(prev => [...prev, { from: 'bot', text: botResponse }]);
+        } else {
+          setMessages(prev => [...prev, { from: 'bot', text: "Sorry, I couldn't find any movies for that genre." }]);
+        }
+      } else {
+        const API_ENDPOINT = 'https://api.themoviedb.org/3';
+        const API_KEY = import.meta.env.VITE_TMDB_API_KEY;
+        const API_OPTIONS = {
+          method: 'GET',
+          headers: {
+            accept: 'application/json',
+            Authorization: `Bearer ${API_KEY}`
+          }
+        };
+
+        fetch(`${API_ENDPOINT}/search/movie?query=${encodeURIComponent(userText)}`, API_OPTIONS)
+          .then(response => response.json())
+          .then(data => {
+            if (data.results && data.results.length > 0) {
+              const movie = data.results[0];
+              // Return the full overview without truncation.
+              const botResponse = `I found "${movie.title}": ${movie.overview}`;
+              setMessages(prev => [...prev, { from: 'bot', text: botResponse }]);
+            } else {
+              setMessages(prev => [...prev, { from: 'bot', text: "Sorry, I couldn't find any movies matching that title." }]);
+            }
+          })
+          .catch(err => {
+            setMessages(prev => [...prev, { from: 'bot', text: "An error occurred while searching for movies." }]);
+          });
+      }
+    }, 1000);
   };
 
   return (
@@ -80,6 +105,7 @@ const ChatBot = ({ movies, onClose }) => {
             <p className="text-sm">{msg.text}</p>
           </div>
         ))}
+        <div ref={messagesEndRef} />
       </div>
       <div className="chatbot-input flex">
         <input
