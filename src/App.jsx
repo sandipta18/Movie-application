@@ -36,32 +36,43 @@ function App() {
   }, 500, [searchTerm])
 
   const FetchMovies = async (query = '') => {
-    setIsLoading(true)
-    setErrorMesssage('')
+    setIsLoading(true);
+    setErrorMesssage('');
+  
+
+    const cachedMovies = localStorage.getItem(`movies-${query}`);
+    if (cachedMovies) {
+      setMovieList(JSON.parse(cachedMovies));
+      setIsLoading(false);
+      return;
+    }
+  
     try {
       const endpoint = query
         ? `${API_ENDPOINT}/search/movie?query=${encodeURIComponent(query)}`
-        : `${API_ENDPOINT}/discover/movie?sort_by=popularity.desc`
-      const response = await fetch(endpoint, API_OPTIONS)
+        : `${API_ENDPOINT}/discover/movie?sort_by=popularity.desc`;
+      const response = await fetch(endpoint, API_OPTIONS);
+      
       if (!response.ok) {
-        throw new Error('Failed to fetch movies')
+        throw new Error('Failed to fetch movies');
       }
-      const data = await response.json()
-      setMovieList(data.results || [])
+  
+      const data = await response.json();
+      setMovieList(data.results || []);
+  
+      localStorage.setItem(`movies-${query}`, JSON.stringify(data.results));
+  
       if (query && data.results.length > 0) {
-        await updateSearchCount(query, data.results[0])
-      }
-      if (data.Response === 'False') {
-        setErrorMesssage(data.Error || 'Failed to fetch movies')
-        setMovieList([])
-        return
+        await updateSearchCount(query, data.results[0]);
       }
     } catch (error) {
-      console.error(`Error fetching movies: ${error}`)
+      console.error(`Error fetching movies: ${error}`);
+      setErrorMesssage('Could not load movies. Please try again later.');
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
+  
 
   useEffect(() => {
     FetchMovies(deboucedSearchTerm)
@@ -133,7 +144,7 @@ function App() {
 
       <button
         onClick={() => setShowChatBot(prev => !prev)}
-        className="fixed bottom-5 left-5 bg-yellow-500 text-black p-3 rounded-full shadow-lg hover:bg-yellow-600"
+        className="fixed bottom-5 right-5 bg-yellow-500 text-black p-3 rounded-full shadow-lg hover:bg-yellow-600"
       >
         <FaComments className="w-6 h-6" />
       </button>
